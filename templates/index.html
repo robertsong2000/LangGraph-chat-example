@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LangGraph Multi-Agent Chat</title>
+<link rel="stylesheet" href="/static/styles.css?v=3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar: team + controls -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">⦿</div>
+      <div>
+        <h1 data-i18n="appTitle">LangGraph Chat</h1>
+        <p class="tagline" data-i18n="appTagline">Multi-agent orchestration</p>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <div class="status-row">
+        <span class="dot" id="modeDot"></span>
+        <span id="modeText" data-i18n="connecting">connecting…</span>
+      </div>
+      <div class="status-row muted">
+        <span data-i18n="model">Model</span><span id="modelText">—</span>
+      </div>
+    </div>
+
+    <div class="lang-switch">
+      <button id="langBtn" class="btn-ghost lang-btn" title="Switch language / 切换语言">
+        <span id="langLabel">中文</span>
+      </button>
+    </div>
+
+    <h2 class="section-title" data-i18n="teamTitle">The Team</h2>
+    <ul class="team-list" id="teamList">
+      <li data-agent="supervisor">
+        <span class="avatar sup">🧭</span>
+        <div><strong data-i18n="supName">Supervisor</strong><small data-i18n="supDesc">routes &amp; coordinates</small></div>
+      </li>
+      <li data-agent="coder">
+        <span class="avatar code">👨‍💻</span>
+        <div><strong data-i18n="coderName">Coder</strong><small data-i18n="coderDesc">writes &amp; debugs code</small></div>
+      </li>
+      <li data-agent="researcher">
+        <span class="avatar res">🔬</span>
+        <div><strong data-i18n="resName">Researcher</strong><small data-i18n="resDesc">analyzes &amp; compares</small></div>
+      </li>
+      <li data-agent="writer">
+        <span class="avatar wri">✍️</span>
+        <div><strong data-i18n="writerName">Writer</strong><small data-i18n="writerDesc">drafts &amp; polishes</small></div>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <button id="newChatBtn" class="btn-ghost" data-i18n="newChat">＋ New conversation</button>
+      <p class="hint" data-i18n="hint">Conversations persist across server restarts via the LangGraph checkpointer.</p>
+    </div>
+  </aside>
+
+  <!-- Main chat -->
+  <main class="chat">
+    <header class="chat-header">
+      <div>
+        <h2 data-i18n="conversation">Conversation</h2>
+        <p class="thread-id"><span data-i18n="thread">thread</span>: <code id="threadId">—</code></p>
+      </div>
+      <div class="examples">
+        <button class="chip" data-prompt="Write a Python function to check if a string is a palindrome, with tests." data-i18n="exCode">Code task</button>
+        <button class="chip" data-prompt="Compare REST vs GraphQL for a mobile app backend." data-i18n="exResearch">Research task</button>
+        <button class="chip" data-prompt="Draft a short blog intro about multi-agent systems." data-i18n="exWriting">Writing task</button>
+      </div>
+    </header>
+
+    <div class="messages" id="messages">
+      <div class="empty" id="emptyState">
+        <div class="empty-icon">✨</div>
+        <h3 data-i18n="emptyTitle">Ask anything</h3>
+        <p data-i18n="emptyBody">The supervisor will route your request to the right specialist agent — watch the trace light up in real time.</p>
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <form class="composer" id="composer">
+        <textarea id="input" data-i18n-placeholder="inputPlaceholder" placeholder="Send a message…" rows="1" autocomplete="off"></textarea>
+        <button type="submit" id="sendBtn" class="btn-primary" disabled data-i18n="send">Send</button>
+      </form>
+      <div class="composer-hint" data-i18n="enterHint">Enter to send · Shift+Enter for newline</div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="/static/i18n.js?v=3"></script>
+<script src="/static/app.js?v=3"></script>
+</body>
+</html>
