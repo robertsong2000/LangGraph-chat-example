@@ -488,7 +488,7 @@ function addDiscussMessage(agent, content, isSummary) {
   discussScrollDown();
 }
 
-// ---------- Discussion runner ----------
+// ---------- Discussion runner (streaming via SSE) ----------
 discussStart.addEventListener("click", async () => {
   const topic = discussTopic.value.trim();
   const rounds = parseInt(discussRounds.value, 10) || 10;
@@ -501,7 +501,7 @@ discussStart.addEventListener("click", async () => {
   // Clear previous discussion in the view.
   discussMessages.innerHTML = "";
 
-  // Typing indicator while the team deliberates.
+  // Typing indicator shown until the first turn arrives.
   const typing = document.createElement("div");
   typing.className = "msg ai";
   typing.innerHTML =
@@ -511,30 +511,58 @@ discussStart.addEventListener("click", async () => {
   discussMessages.appendChild(typing);
   discussScrollDown();
 
+  let lastRound = 0;
+  let firstTurn = true;
+
   try {
-    const r = await fetch("/api/discuss", {
+    const resp = await fetch("/api/discuss", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topic, rounds }),
     });
-    const data = await r.json();
-    typing.remove();
 
-    // Render the timeline round by round.
-    let lastRound = 0;
-    for (const item of data.trace) {
-      if (item.round !== "summary" && item.round !== lastRound) {
-        lastRound = item.round;
-        addRoundDivider(lastRound);
-        await new Promise((res) => setTimeout(res, 250));
+    // Read the SSE stream incrementally.
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE events are separated by a blank line; process each complete one.
+      let idx;
+      while ((idx = buffer.indexOf("\n\n")) >= 0) {
+        const raw = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        const line = raw.replace(/^data:\s*/, "").trim();
+        if (!line) continue;
+
+        let evt;
+        try { evt = JSON.parse(line); } catch { continue; }
+
+        // Drop the typing indicator once real content starts arriving.
+        if (firstTurn && evt.type === "turn") {
+          typing.remove();
+          firstTurn = false;
+        }
+
+        if (evt.type === "turn") {
+          const isSummary = evt.round === "summary";
+          // Insert a round divider when the round number changes.
+          if (!isSummary && evt.round !== lastRound) {
+            lastRound = evt.round;
+            addRoundDivider(lastRound);
+          } else if (isSummary) {
+            addRoundDivider("✦");
+          }
+          addDiscussMessage(evt.agent, evt.content, isSummary);
+        }
       }
-      const isSummary = item.round === "summary";
-      if (isSummary) {
-        addRoundDivider("✦");
-      }
-      addDiscussMessage(item.agent, item.content, isSummary);
-      await new Promise((res) => setTimeout(res, 150));
     }
+    // Clean up if no turns ever arrived.
+    if (firstTurn) typing.remove();
   } catch (err) {
     typing.remove();
     addDiscussMessage("supervisor", "⚠️ " + err.message, false);

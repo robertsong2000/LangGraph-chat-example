@@ -180,11 +180,11 @@ async def delete_thread(thread_id: str):
 # --------------------------------------------------------------------------- #
 @app.post("/api/discuss")
 async def discuss(req: DiscussRequest):
-    """Run a multi-turn round-table discussion and return the full transcript.
+    """Stream a multi-turn round-table discussion via Server-Sent Events.
 
-    The coordinator picks a specialist each round; after `rounds` turns the
-    summarizer synthesises everything. Each trace entry carries its round
-    number so the UI can render the timeline.
+    Each specialist's utterance is pushed to the client the moment it is
+    produced, so the timeline fills in live instead of waiting for all
+    rounds to finish. A final `[DONE]` sentinel signals completion.
     """
     thread_id = "disc_" + (req.thread_id or _new_thread_id())
     config = {"configurable": {"thread_id": thread_id}}
@@ -198,36 +198,45 @@ async def discuss(req: DiscussRequest):
         "next": "coordinator",
         "active_agent": None,
     }
-    stream = discussion_graph.stream(inputs, config=config, stream_mode="updates")
 
-    trace: list[dict] = []
-    round_counter = 0
-    for chunk in stream:
-        for node_name, delta in chunk.items():
-            if not delta:
-                continue
-            new_msgs = delta.get("messages", [])
-            for msg in new_msgs:
-                if not isinstance(msg, AIMessage):
+    def event_stream():
+        """Generator yielding SSE 'data:' lines as the graph runs."""
+        round_counter = 0
+        # Send a meta event first so the client knows the params.
+        yield "data: " + json.dumps({
+            "type": "meta",
+            "thread_id": thread_id,
+            "topic": req.topic,
+            "rounds": rounds,
+            "llm_mode": "real" if settings.can_use_real_llm else "mock",
+        }) + "\n\n"
+
+        stream = discussion_graph.stream(
+            inputs, config=config, stream_mode="updates")
+        for chunk in stream:
+            for node_name, delta in chunk.items():
+                if not delta:
                     continue
-                # Specialist messages belong to a numbered round; the
-                # summarizer message is the finale.
-                if node_name == "summarizer":
-                    label = "summary"
-                else:
-                    round_counter += 1
-                    label = round_counter
-                trace.append({
-                    "agent": getattr(msg, "name", None) or node_name,
-                    "node": node_name,
-                    "round": label,
-                    "content": str(msg.content),
-                })
+                for msg in delta.get("messages", []):
+                    if not isinstance(msg, AIMessage):
+                        continue
+                    if node_name == "summarizer":
+                        label = "summary"
+                    else:
+                        round_counter += 1
+                        label = round_counter
+                    yield "data: " + json.dumps({
+                        "type": "turn",
+                        "agent": getattr(msg, "name", None) or node_name,
+                        "node": node_name,
+                        "round": label,
+                        "content": str(msg.content),
+                    }) + "\n\n"
 
-    return JSONResponse({
-        "thread_id": thread_id,
-        "topic": req.topic,
-        "rounds": rounds,
-        "trace": trace,
-        "llm_mode": "real" if settings.can_use_real_llm else "mock",
-    })
+        yield "data: " + json.dumps({"type": "done"}) + "\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
