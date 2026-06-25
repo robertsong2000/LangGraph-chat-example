@@ -41,6 +41,15 @@ const queue = [];         // pending user messages awaiting their turn
 // ─────────────────────────────────────────────────────────────
 const SESSIONS_KEY = "lg_chat_sessions";
 
+// Generate a thread id matching the server's format (uuid hex, 12 chars).
+function makeThreadId() {
+  // crypto.randomUUID is available in modern browsers; fall back if needed.
+  if (window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  }
+  return Math.random().toString(16).slice(2, 14);
+}
+
 function loadSessions() {
   try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || "[]"); }
   catch { return []; }
@@ -55,11 +64,13 @@ function upsertSession(id, title) {
   const list = loadSessions();
   let s = list.find((x) => x.id === id);
   const now = Date.now();
+  const placeholder = t("newSession");
   if (!s) {
-    s = { id, title: title || t("newSession"), createdAt: now, updatedAt: now };
+    s = { id, title: title || placeholder, createdAt: now, updatedAt: now };
     list.unshift(s);
   } else {
-    if (title) s.title = title;
+    // Only overwrite the title with a real one (not the placeholder).
+    if (title && title !== placeholder) s.title = title;
     s.updatedAt = now;
     // move to top
     list.splice(list.indexOf(s), 1);
@@ -299,15 +310,22 @@ document.querySelectorAll(".chip").forEach((chip) => {
 $("#newChatBtn").addEventListener("click", () => {
   // Don't reset the current thread — just start a fresh blank view.
   // The old session stays in the sidebar list and on the server.
-  threadId = null;
-  threadEl.textContent = "—";
   queue.length = 0;
   processing = false;
   messagesEl.innerHTML = "";
   messagesEl.appendChild(emptyState);
   highlightAgent("");
+
+  // Pre-create a session so it shows up in the sidebar immediately.
+  // We generate the thread_id client-side (same format as the server);
+  // the server will reuse it because we send thread_id with each request.
+  const newId = makeThreadId();
+  threadId = newId;
+  threadEl.textContent = newId;
+  upsertSession(newId, t("newSession"));
   renderSessionList();
   updateSendBtn();
+  inputEl.focus();
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -359,9 +377,12 @@ async function processQueue() {
     threadEl.textContent = threadId;
 
     // Persist/update this session in localStorage.
-    // Title = first user message in the session (truncated).
+    // Title = first user message in the session (truncated), unless a real
+    // (non-placeholder) title already exists.
     const existing = findSession(threadId);
-    const title = existing && existing.title ? existing.title : text.slice(0, 30);
+    const placeholder = t("newSession");
+    const hasRealTitle = existing && existing.title && existing.title !== placeholder;
+    const title = hasRealTitle ? existing.title : text.slice(0, 30);
     upsertSession(threadId, title);
     renderSessionList();
 
