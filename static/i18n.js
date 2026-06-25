@@ -111,3 +111,37 @@ function t(key) {
   const dict = I18N[getLang()] || I18N.en;
   return dict[key] != null ? dict[key] : key;
 }
+
+// ─────────────────────────────────────────────────────────────
+//  Theme management (light / dark)
+//  Precedence: saved choice > system preference > dark.
+// ─────────────────────────────────────────────────────────────
+const THEME_KEY = "lg_chat_theme";
+
+function systemPrefersLight() {
+  return window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: light)").matches;
+}
+
+function getTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === "light" || saved === "dark") return saved;
+  return systemPrefersLight() ? "light" : "dark";
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  // Swap the toggle icon: show what you'll switch TO.
+  const icon = document.getElementById("themeIcon");
+  if (icon) icon.textContent = theme === "dark" ? "☀️" : "🌙";
+}
+
+function toggleTheme() {
+  const next = getTheme() === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+}
+
+// Apply theme ASAP to avoid a flash of the wrong colors.
+applyTheme(getTheme());
+

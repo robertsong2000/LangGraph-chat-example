@@ -18,6 +18,7 @@ const modelText  = $("#modelText");
 const emptyState = $("#emptyState");
 const teamItems  = document.querySelectorAll(".team-list li");
 const langBtn    = $("#langBtn");
+const themeBtn   = $("#themeBtn");
 const sessionListEl = $("#sessionList");
 
 const AVATAR = {
@@ -153,6 +154,13 @@ langBtn.addEventListener("click", () => {
   applyI18n(next);
   refreshStatusText();
   inputEl.focus();
+});
+
+// ---------- theme toggle ----------
+themeBtn.addEventListener("click", toggleTheme);
+// React to OS theme changes if the user hasn't picked manually.
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+  if (!localStorage.getItem(THEME_KEY)) applyTheme(getTheme());
 });
 
 // ---------- Boot: health check ----------
