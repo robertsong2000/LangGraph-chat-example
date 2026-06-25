@@ -430,3 +430,125 @@ composer.addEventListener("submit", (e) => {
 
 updateSendBtn();
 inputEl.focus();
+
+// ═══════════════════════════════════════════════════════════
+//  ROUND-TABLE DISCUSSION MODE
+// ═══════════════════════════════════════════════════════════
+const tabChat       = $("#tabChat");
+const tabDiscuss    = $("#tabDiscuss");
+const viewChat      = $("#viewChat");
+const viewDiscuss   = $("#viewDiscuss");
+const discussControls = $("#discussControls");
+const discussTopic  = $("#discussTopic");
+const discussRounds = $("#discussRounds");
+const discussStart  = $("#discussStart");
+const discussMessages = $("#discussMessages");
+const discussEmpty  = $("#discussEmpty");
+let discussBusy = false;
+
+// ---------- Tab switching ----------
+function switchMode(mode) {
+  const isChat = mode === "chat";
+  tabChat.classList.toggle("active", isChat);
+  tabDiscuss.classList.toggle("active", !isChat);
+  viewChat.classList.toggle("active", isChat);
+  viewDiscuss.classList.toggle("active", !isChat);
+}
+tabChat.addEventListener("click", () => switchMode("chat"));
+tabDiscuss.addEventListener("click", () => switchMode("discuss"));
+
+// ---------- Discussion rendering helpers ----------
+function discussScrollDown() {
+  discussMessages.scrollTop = discussMessages.scrollHeight;
+}
+
+function addRoundDivider(round) {
+  const div = document.createElement("div");
+  div.className = "round-divider";
+  div.innerHTML = '<span>' + t("round") + ' ' + round + '</span>';
+  discussMessages.appendChild(div);
+  discussScrollDown();
+}
+
+function addDiscussMessage(agent, content, isSummary) {
+  if (discussEmpty) discussEmpty.remove();
+  const wrap = document.createElement("div");
+  wrap.className = "msg ai" + (isSummary ? " summary-msg" : "");
+  const av = AVATAR[agent] || AVATAR.supervisor;
+  wrap.innerHTML =
+    '<div class="b-avatar avatar ' + av.cls + '">' + av.emoji + '</div>' +
+    '<div>' +
+      '<div class="name ' + agent + '">' +
+        (isSummary ? "📋 " : "") + (agent || "assistant") +
+      '</div>' +
+      '<div class="bubble"></div>' +
+    '</div>';
+  wrap.querySelector(".bubble").innerHTML = renderMarkdown(content);
+  discussMessages.appendChild(wrap);
+  discussScrollDown();
+}
+
+// ---------- Discussion runner ----------
+discussStart.addEventListener("click", async () => {
+  const topic = discussTopic.value.trim();
+  const rounds = parseInt(discussRounds.value, 10) || 10;
+  if (!topic || discussBusy) return;
+
+  discussBusy = true;
+  discussStart.disabled = true;
+  discussTopic.disabled = true;
+
+  // Clear previous discussion in the view.
+  discussMessages.innerHTML = "";
+
+  // Typing indicator while the team deliberates.
+  const typing = document.createElement("div");
+  typing.className = "msg ai";
+  typing.innerHTML =
+    '<div class="b-avatar avatar sup">🧭</div>' +
+    '<div><div class="name supervisor">' + t("coordinator") + '</div>' +
+    '<div class="bubble"><span class="typing"><span></span><span></span><span></span></span></div></div>';
+  discussMessages.appendChild(typing);
+  discussScrollDown();
+
+  try {
+    const r = await fetch("/api/discuss", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic, rounds }),
+    });
+    const data = await r.json();
+    typing.remove();
+
+    // Render the timeline round by round.
+    let lastRound = 0;
+    for (const item of data.trace) {
+      if (item.round !== "summary" && item.round !== lastRound) {
+        lastRound = item.round;
+        addRoundDivider(lastRound);
+        await new Promise((res) => setTimeout(res, 250));
+      }
+      const isSummary = item.round === "summary";
+      if (isSummary) {
+        addRoundDivider("✦");
+      }
+      addDiscussMessage(item.agent, item.content, isSummary);
+      await new Promise((res) => setTimeout(res, 150));
+    }
+  } catch (err) {
+    typing.remove();
+    addDiscussMessage("supervisor", "⚠️ " + err.message, false);
+  } finally {
+    discussBusy = false;
+    discussStart.disabled = false;
+    discussTopic.disabled = false;
+  }
+});
+
+// Enter key in topic input triggers start.
+discussTopic.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    discussStart.click();
+  }
+});

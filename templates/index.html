@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LangGraph Multi-Agent Chat</title>
-<link rel="stylesheet" href="/static/styles.css?v=7">
+<link rel="stylesheet" href="/static/styles.css?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
@@ -73,38 +73,80 @@
 
   <!-- Main chat -->
   <main class="chat">
-    <header class="chat-header">
-      <div>
-        <h2 data-i18n="conversation">Conversation</h2>
-        <p class="thread-id"><span data-i18n="thread">thread</span>: <code id="threadId">—</code></p>
-      </div>
-      <div class="examples">
-        <button class="chip" data-prompt="Write a Python function to check if a string is a palindrome, with tests." data-i18n="exCode">Code task</button>
-        <button class="chip" data-prompt="Compare REST vs GraphQL for a mobile app backend." data-i18n="exResearch">Research task</button>
-        <button class="chip" data-prompt="Draft a short blog intro about multi-agent systems." data-i18n="exWriting">Writing task</button>
-      </div>
-    </header>
+    <!-- Mode tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tabChat" data-mode="chat">
+        <span>💬</span> <span data-i18n="chatTab">Chat</span>
+      </button>
+      <button class="mode-tab" id="tabDiscuss" data-mode="discuss">
+        <span>🎯</span> <span data-i18n="discussTab">Discuss</span>
+      </button>
+    </div>
 
-    <div class="messages" id="messages">
-      <div class="empty" id="emptyState">
-        <div class="empty-icon">✨</div>
-        <h3 data-i18n="emptyTitle">Ask anything</h3>
-        <p data-i18n="emptyBody">The supervisor will route your request to the right specialist agent — watch the trace light up in real time.</p>
+    <!-- ===== CHAT VIEW ===== -->
+    <div class="view view-chat active" id="viewChat">
+      <header class="chat-header">
+        <div>
+          <h2 data-i18n="conversation">Conversation</h2>
+          <p class="thread-id"><span data-i18n="thread">thread</span>: <code id="threadId">—</code></p>
+        </div>
+        <div class="examples">
+          <button class="chip" data-prompt="Write a Python function to check if a string is a palindrome, with tests." data-i18n="exCode">Code task</button>
+          <button class="chip" data-prompt="Compare REST vs GraphQL for a mobile app backend." data-i18n="exResearch">Research task</button>
+          <button class="chip" data-prompt="Draft a short blog intro about multi-agent systems." data-i18n="exWriting">Writing task</button>
+        </div>
+      </header>
+
+      <div class="messages" id="messages">
+        <div class="empty" id="emptyState">
+          <div class="empty-icon">✨</div>
+          <h3 data-i18n="emptyTitle">Ask anything</h3>
+          <p data-i18n="emptyBody">The supervisor will route your request to the right specialist agent — watch the trace light up in real time.</p>
+        </div>
+      </div>
+
+      <div class="composer-wrap">
+        <form class="composer" id="composer">
+          <textarea id="input" data-i18n-placeholder="inputPlaceholder" placeholder="Send a message…" rows="1" autocomplete="off"></textarea>
+          <button type="submit" id="sendBtn" class="btn-primary" disabled data-i18n="send">Send</button>
+        </form>
+        <div class="composer-hint" data-i18n="enterHint">Enter to send · Shift+Enter for newline · queue supported</div>
       </div>
     </div>
 
-    <div class="composer-wrap">
-      <form class="composer" id="composer">
-        <textarea id="input" data-i18n-placeholder="inputPlaceholder" placeholder="Send a message…" rows="1" autocomplete="off"></textarea>
-        <button type="submit" id="sendBtn" class="btn-primary" disabled data-i18n="send">Send</button>
-      </form>
-      <div class="composer-hint" data-i18n="enterHint">Enter to send · Shift+Enter for newline · queue supported</div>
+    <!-- ===== DISCUSS VIEW ===== -->
+    <div class="view view-discuss" id="viewDiscuss">
+      <header class="chat-header">
+        <div>
+          <h2 data-i18n="roundTable">Round-table Discussion</h2>
+          <p class="thread-id" data-i18n="discussDesc">Coordinator + specialists debate a topic</p>
+        </div>
+      </header>
+
+      <!-- Discussion controls -->
+      <div class="discuss-controls" id="discussControls">
+        <input type="text" id="discussTopic" data-i18n-placeholder="topicPlaceholder" placeholder="Enter a topic for the discussion…" autocomplete="off">
+        <label class="rounds-control">
+          <span data-i18n="rounds">Rounds</span>
+          <input type="number" id="discussRounds" value="10" min="1" max="20">
+        </label>
+        <button type="button" id="discussStart" class="btn-primary" data-i18n="start">Start</button>
+      </div>
+
+      <!-- Discussion timeline -->
+      <div class="messages" id="discussMessages">
+        <div class="empty" id="discussEmpty">
+          <div class="empty-icon">🎯</div>
+          <h3 data-i18n="discussEmptyTitle">Start a discussion</h3>
+          <p data-i18n="discussEmptyBody">Enter a topic above, choose how many rounds, and watch the team debate it.</p>
+        </div>
+      </div>
     </div>
   </main>
 </div>
 
 <script src="/static/vendor/marked.min.js"></script>
-<script src="/static/i18n.js?v=7"></script>
-<script src="/static/app.js?v=7"></script>
+<script src="/static/i18n.js?v=8"></script>
+<script src="/static/app.js?v=8"></script>
 </body>
 </html>

@@ -38,6 +38,18 @@ const I18N = {
     deleteSession:  "Delete",
     confirmDelete:  "Delete this session?",
     newSession:     "New session",
+    // discussion mode
+    chatTab:        "Chat",
+    discussTab:     "Discuss",
+    roundTable:     "Round-table Discussion",
+    discussDesc:    "Coordinator + specialists debate a topic",
+    topicPlaceholder: "Enter a topic for the discussion…",
+    rounds:         "Rounds",
+    start:          "Start",
+    round:          "Round",
+    coordinator:    "Coordinator",
+    discussEmptyTitle: "Start a discussion",
+    discussEmptyBody:  "Enter a topic above, choose how many rounds, and watch the team debate it.",
     switchLang:     "中文",   // label shown when current lang is EN (click → zh)
   },
   zh: {
@@ -76,6 +88,18 @@ const I18N = {
     deleteSession:  "删除",
     confirmDelete:  "确定删除这个会话吗？",
     newSession:     "新会话",
+    // 讨论模式
+    chatTab:        "聊天",
+    discussTab:     "讨论",
+    roundTable:     "圆桌讨论",
+    discussDesc:    "协调者与专家围绕主题辩论",
+    topicPlaceholder: "输入讨论主题…",
+    rounds:         "轮次",
+    start:          "开始",
+    round:          "第",
+    coordinator:    "协调者",
+    discussEmptyTitle: "开始一场讨论",
+    discussEmptyBody:  "在上方输入主题，选择轮次，观看团队展开辩论。",
     switchLang:     "EN",    // label shown when current lang is ZH (click → en)
   },
 };

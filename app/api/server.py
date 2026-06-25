@@ -7,6 +7,7 @@ GET  /api/health         — liveness probe
 POST /api/chat           — non-streaming chat (returns full trace)
 GET  /api/threads/{id}   — replay a saved conversation
 POST /api/reset/{id}     — clear a thread's history
+POST /api/discuss        — round-table discussion (multi-turn debate + summary)
 """
 from __future__ import annotations
 
@@ -21,6 +22,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel
 
 from app.agents import app_graph, FINISH, SUPERVISOR
+from app.agents.discussion import discussion_graph
 from app.core.config import settings
 
 app = FastAPI(title="LangGraph Multi-Agent Chat")
@@ -32,6 +34,12 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # --------------------------------------------------------------------------- #
 class ChatRequest(BaseModel):
     message: str
+    thread_id: str | None = None
+
+
+class DiscussRequest(BaseModel):
+    topic: str
+    rounds: int = 10
     thread_id: str | None = None
 
 
@@ -165,3 +173,61 @@ async def delete_thread(thread_id: str):
     except Exception:
         pass
     return {"thread_id": thread_id, "status": "deleted"}
+
+
+# --------------------------------------------------------------------------- #
+# Round-table discussion
+# --------------------------------------------------------------------------- #
+@app.post("/api/discuss")
+async def discuss(req: DiscussRequest):
+    """Run a multi-turn round-table discussion and return the full transcript.
+
+    The coordinator picks a specialist each round; after `rounds` turns the
+    summarizer synthesises everything. Each trace entry carries its round
+    number so the UI can render the timeline.
+    """
+    thread_id = "disc_" + (req.thread_id or _new_thread_id())
+    config = {"configurable": {"thread_id": thread_id}}
+    rounds = max(1, min(req.rounds, 20))  # clamp to 1..20
+
+    inputs = {
+        "messages": [HumanMessage(content=req.topic)],
+        "topic": req.topic,
+        "max_rounds": rounds,
+        "current_round": 0,
+        "next": "coordinator",
+        "active_agent": None,
+    }
+    stream = discussion_graph.stream(inputs, config=config, stream_mode="updates")
+
+    trace: list[dict] = []
+    round_counter = 0
+    for chunk in stream:
+        for node_name, delta in chunk.items():
+            if not delta:
+                continue
+            new_msgs = delta.get("messages", [])
+            for msg in new_msgs:
+                if not isinstance(msg, AIMessage):
+                    continue
+                # Specialist messages belong to a numbered round; the
+                # summarizer message is the finale.
+                if node_name == "summarizer":
+                    label = "summary"
+                else:
+                    round_counter += 1
+                    label = round_counter
+                trace.append({
+                    "agent": getattr(msg, "name", None) or node_name,
+                    "node": node_name,
+                    "round": label,
+                    "content": str(msg.content),
+                })
+
+    return JSONResponse({
+        "thread_id": thread_id,
+        "topic": req.topic,
+        "rounds": rounds,
+        "trace": trace,
+        "llm_mode": "real" if settings.can_use_real_llm else "mock",
+    })

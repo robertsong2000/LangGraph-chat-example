@@ -181,6 +181,25 @@ code, pre { font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monos
   display: flex; flex-direction: column;
   background: var(--bg); min-width: 0;
 }
+
+/* ---------- Mode tabs ---------- */
+.mode-tabs {
+  display: flex; gap: 4px; padding: 10px 26px 0;
+  border-bottom: 1px solid var(--border);
+}
+.mode-tab {
+  padding: 9px 18px; font-size: 14px; font-weight: 500; color: var(--muted);
+  background: transparent; border: none; border-bottom: 2px solid transparent;
+  cursor: pointer; transition: all .2s; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.mode-tab:hover { color: var(--text); }
+.mode-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ---------- Views ---------- */
+.view { display: none; flex: 1; flex-direction: column; min-height: 0; }
+.view.active { display: flex; }
+
 .chat-header {
   padding: 18px 26px; border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
@@ -200,6 +219,47 @@ code, pre { font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monos
 .messages {
   flex: 1; overflow-y: auto; padding: 26px;
   display: flex; flex-direction: column; gap: 16px;
+}
+
+/* ---------- Discussion controls ---------- */
+.discuss-controls {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 26px; border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.discuss-controls input[type="text"] {
+  flex: 1; min-width: 200px;
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px 14px; color: var(--text);
+  font-family: inherit; font-size: 14px; outline: none; transition: border-color .2s;
+}
+.discuss-controls input[type="text"]:focus { border-color: var(--accent); }
+.rounds-control {
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+  color: var(--muted); white-space: nowrap;
+}
+.rounds-control input[type="number"] {
+  width: 64px; background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 10px; color: var(--text);
+  font-family: inherit; font-size: 14px; outline: none; text-align: center;
+}
+
+/* ---------- Round divider ---------- */
+.round-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 8px 0 4px; color: var(--dim); font-size: 11px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.round-divider::before,
+.round-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.round-divider span { white-space: nowrap; }
+
+/* ---------- Summary message ---------- */
+.msg.summary-msg .bubble {
+  border-color: var(--accent); border-style: dashed;
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
 }
 .empty {
   margin: auto; text-align: center; color: var(--muted); max-width: 360px;
