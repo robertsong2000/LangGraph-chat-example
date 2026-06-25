@@ -68,13 +68,27 @@ def _make_discuss_specialist(name: str, persona: str):
 
     def node(state: DiscussionState) -> dict:
         topic = state.get("topic", "")
-        system = (
-            f"You are {persona}. You are taking part in a round-table discussion "
-            f"about: \"{topic}\".\n"
-            "Build on or respectfully challenge what others have said so far. "
-            "Give your professional perspective in 3-5 sentences. Do not repeat "
-            "what was already said — add new insight."
-        )
+        # Has any specialist spoken yet? The coordinator never emits a
+        # message, so the first specialist sees an empty transcript.
+        has_prior = any(isinstance(m, AIMessage) for m in state["messages"])
+        if has_prior:
+            system = (
+                f"You are {persona}. You are taking part in a round-table "
+                f"discussion about: \"{topic}\".\n"
+                "Other participants have already spoken (see the transcript "
+                "below). Build on or respectfully challenge what they said. "
+                "Give your professional perspective in 3-5 sentences. Do not "
+                "repeat what was already said — add new insight."
+            )
+        else:
+            system = (
+                f"You are {persona}. You are OPENING a round-table discussion "
+                f"about: \"{topic}\".\n"
+                "You are the FIRST speaker — there is no prior discussion yet. "
+                "Do NOT refer to anything others have said or pretend a "
+                "conversation is already underway. State your own professional "
+                "perspective on the topic from scratch, in 3-5 sentences."
+            )
         messages = [{"role": "system", "content": system}] + [
             _to_dict(m) for m in state["messages"]
         ]
