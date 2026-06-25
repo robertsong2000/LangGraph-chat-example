@@ -30,8 +30,14 @@ const I18N = {
     emptyBody:      "The supervisor will route your request to the right specialist agent — watch the trace light up in real time.",
     inputPlaceholder: "Send a message…",
     send:           "Send",
-    enterHint:      "Enter to send · Shift+Enter for newline",
+    enterHint:      "Enter to send · Shift+Enter for newline · queue supported",
     routes:         "routes",
+    queued:         "queued",   // pending tag shown on a message waiting its turn
+    sessionsTitle:  "Sessions",
+    noSessions:     "No sessions yet",
+    deleteSession:  "Delete",
+    confirmDelete:  "Delete this session?",
+    newSession:     "New session",
     switchLang:     "中文",   // label shown when current lang is EN (click → zh)
   },
   zh: {
@@ -62,8 +68,14 @@ const I18N = {
     emptyBody:      "监督者会把你的请求路由给最合适的专家智能体——实时查看路由轨迹。",
     inputPlaceholder: "输入消息…",
     send:           "发送",
-    enterHint:      "回车发送 · Shift+回车换行",
+    enterHint:      "回车发送 · Shift+回车换行 · 支持排队",
     routes:         "路由",
+    queued:         "排队中",   // pending tag shown on a message waiting its turn
+    sessionsTitle:  "会话记录",
+    noSessions:     "暂无会话",
+    deleteSession:  "删除",
+    confirmDelete:  "确定删除这个会话吗？",
+    newSession:     "新会话",
     switchLang:     "EN",    // label shown when current lang is ZH (click → en)
   },
 };

@@ -149,3 +149,19 @@ async def reset_thread(thread_id: str):
     except Exception:  # pragma: no cover
         pass
     return {"thread_id": thread_id, "status": "reset"}
+
+
+@app.delete("/api/threads/{thread_id}")
+async def delete_thread(thread_id: str):
+    """Delete a thread's persisted state from the checkpointer."""
+    config = {"configurable": {"thread_id": thread_id}}
+    try:
+        # MemorySaver stores channels in a dict keyed by thread config.
+        # Clearing the messages/next/turn_count empties the visible state.
+        app_graph.update_state(config, {"messages": [],
+                                        "next": SUPERVISOR,
+                                        "turn_count": 0,
+                                        "active_agent": None})
+    except Exception:
+        pass
+    return {"thread_id": thread_id, "status": "deleted"}
