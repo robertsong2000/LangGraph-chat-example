@@ -22,7 +22,8 @@ from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel
 
 from app.agents import app_graph, FINISH, SUPERVISOR
-from app.agents.discussion import discussion_graph
+from app.agents.discussion import get_discussion_graph, recruit_panel
+from app.agents.roles import get_role_meta
 from app.core.config import settings
 
 app = FastAPI(title="LangGraph Multi-Agent Chat")
@@ -190,6 +191,16 @@ async def discuss(req: DiscussRequest):
     config = {"configurable": {"thread_id": thread_id}}
     rounds = max(1, min(req.rounds, 20))  # clamp to 1..20
 
+    # Recruit a topic-specific panel BEFORE building the graph. The panel
+    # determines which specialist nodes exist in the compiled graph, so
+    # "福州美食" recruits a 美食家 instead of a hard-coded engineer.
+    panel_keys = recruit_panel(req.topic, max_size=3)
+    panel_meta = [
+        {"key": k, "name": get_role_meta(k)["name"], "emoji": get_role_meta(k)["emoji"]}
+        for k in panel_keys
+    ]
+    graph = get_discussion_graph(panel_keys)
+
     inputs = {
         "messages": [HumanMessage(content=req.topic)],
         "topic": req.topic,
@@ -202,7 +213,7 @@ async def discuss(req: DiscussRequest):
     def event_stream():
         """Generator yielding SSE 'data:' lines as the graph runs."""
         round_counter = 0
-        # Send a meta event first so the client knows the params.
+        # Send a meta event first so the client knows the params...
         yield "data: " + json.dumps({
             "type": "meta",
             "thread_id": thread_id,
@@ -210,8 +221,14 @@ async def discuss(req: DiscussRequest):
             "rounds": rounds,
             "llm_mode": "real" if settings.can_use_real_llm else "mock",
         }) + "\n\n"
+        # ...then announce the recruited panel so the frontend can render a
+        # "本场圆桌" banner before any turns arrive.
+        yield "data: " + json.dumps({
+            "type": "panel",
+            "roles": panel_meta,
+        }) + "\n\n"
 
-        stream = discussion_graph.stream(
+        stream = graph.stream(
             inputs, config=config, stream_mode="updates")
         for chunk in stream:
             for node_name, delta in chunk.items():

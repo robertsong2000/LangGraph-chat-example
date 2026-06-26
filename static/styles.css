@@ -136,6 +136,15 @@ code, pre { font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monos
 .avatar.code { background: rgba(74,222,128,.15); }
 .avatar.res { background: rgba(56,189,248,.15); }
 .avatar.wri { background: rgba(244,114,182,.15); }
+/* Role-pool colours for discussion specialists. Each gets a soft tint. */
+.avatar.role.c0 { background: rgba(248,113,113,.16); }
+.avatar.role.c1 { background: rgba(59,130,246,.16); }
+.avatar.role.c2 { background: rgba(34,197,94,.16); }
+.avatar.role.c3 { background: rgba(234,179,8,.16); }
+.avatar.role.c4 { background: rgba(168,85,247,.16); }
+.avatar.role.c5 { background: rgba(20,184,166,.16); }
+.avatar.role.c6 { background: rgba(244,114,182,.16); }
+.avatar.role.c7 { background: rgba(148,163,184,.16); }
 .team-list strong { display: block; font-size: 13.5px; }
 .team-list small { color: var(--muted); font-size: 11.5px; }
 
@@ -255,6 +264,22 @@ code, pre { font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monos
   content: ''; flex: 1; height: 1px; background: var(--border);
 }
 .round-divider span { white-space: nowrap; }
+
+/* ---------- Panel banner (recruited roles) ---------- */
+.panel-banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin: 4px 0 10px; padding: 10px 14px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 12px; font-size: 13px;
+}
+.panel-title { color: var(--muted); font-weight: 600; margin-right: 2px; }
+.panel-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--panel-2); border: 1px solid var(--border);
+  font-size: 12.5px; font-weight: 600;
+}
 
 /* ---------- Summary message ---------- */
 .msg.summary-msg .bubble {

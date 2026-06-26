@@ -48,6 +48,7 @@ const I18N = {
     start:          "Start",
     round:          "Round",
     coordinator:    "Coordinator",
+    panelTitle:     "This panel:",
     discussEmptyTitle: "Start a discussion",
     discussEmptyBody:  "Enter a topic above, choose how many rounds, and watch the team debate it.",
     switchLang:     "中文",   // label shown when current lang is EN (click → zh)
@@ -98,6 +99,7 @@ const I18N = {
     start:          "开始",
     round:          "第",
     coordinator:    "协调者",
+    panelTitle:     "本场圆桌：",
     discussEmptyTitle: "开始一场讨论",
     discussEmptyBody:  "在上方输入主题，选择轮次，观看团队展开辩论。",
     switchLang:     "EN",    // label shown when current lang is ZH (click → en)

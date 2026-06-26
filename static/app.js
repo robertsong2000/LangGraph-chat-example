@@ -21,13 +21,62 @@ const langBtn    = $("#langBtn");
 const themeBtn   = $("#themeBtn");
 const sessionListEl = $("#sessionList");
 
+// Avatar + Chinese-name registry. Keys mirror the backend role pool
+// (app/agents/roles.py) so a recruited specialist always renders with its
+// own emoji and a stable colour. Roles not listed here (e.g. chat mode's
+// coder/researcher/writer) fall back to a hash-assigned colour below.
 const AVATAR = {
+  // fixed chat-mode roles
   supervisor: { emoji: "🧭", cls: "sup" },
   coder:      { emoji: "👨‍💻", cls: "code" },
   researcher: { emoji: "🔬", cls: "res" },
   writer:     { emoji: "✍️", cls: "wri" },
   user:       { emoji: "🧑", cls: "sup" },
+  // discussion role pool
+  historian:       { emoji: "📜", name: "历史学家" },
+  philosopher:     { emoji: "🦉", name: "哲学家" },
+  scientist:       { emoji: "🔬", name: "科学家" },
+  chef:            { emoji: "🍳", name: "美食家" },
+  economist:       { emoji: "💰", name: "经济学家" },
+  psychologist:    { emoji: "🧠", name: "心理学家" },
+  engineer:        { emoji: "⚙️", name: "工程师" },
+  lawyer:          { emoji: "⚖️", name: "法学家" },
+  artist:          { emoji: "🎨", name: "艺术家" },
+  doctor:          { emoji: "🩺", name: "医学家" },
+  educator:        { emoji: "📚", name: "教育家" },
+  sociologist:     { emoji: "👥", name: "社会学家" },
+  ethicist:        { emoji: "🧭", name: "伦理学家" },
+  designer:        { emoji: "📐", name: "设计师" },
+  entrepreneur:    { emoji: "🚀", name: "创业者" },
+  environmentalist:{ emoji: "🌱", name: "环保学者" },
+  strategist:      { emoji: "♟️", name: "战略顾问" },
 };
+
+// Stable colour buckets for roles without an explicit `.cls`. Each unknown
+// role name is hashed to one of these, so even an ad-hoc role gets a
+// consistent avatar colour instead of falling back to the supervisor grey.
+const FALLBACK_COLORS = ["c0","c1","c2","c3","c4","c5","c6","c7"];
+
+function avatarFor(agent) {
+  const av = AVATAR[agent];
+  if (av) {
+    return { emoji: av.emoji, cls: av.cls || ("role " + _hashColor(agent)) };
+  }
+  // Unknown role → supervisor emoji but a hash-derived colour.
+  return { emoji: "🎯", cls: "role " + _hashColor(agent) };
+}
+
+// Friendly display label: the Chinese name from the pool, or the raw agent
+// string if it isn't a known role (e.g. "coordinator"/"summarizer").
+function labelFor(agent) {
+  return (AVATAR[agent] && AVATAR[agent].name) || agent;
+}
+
+function _hashColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+  return FALLBACK_COLORS[Math.abs(h) % FALLBACK_COLORS.length];
+}
 
 let threadId = null;
 let processing = false;   // is a request currently in-flight?
@@ -470,16 +519,29 @@ function addRoundDivider(round) {
   discussScrollDown();
 }
 
+function addPanelBanner(roles) {
+  if (!roles || !roles.length) return;
+  const div = document.createElement("div");
+  div.className = "panel-banner";
+  const chips = roles.map(r =>
+    '<span class="panel-chip">' + (r.emoji || "") + " " + (r.name || r.key) + "</span>"
+  ).join("");
+  div.innerHTML =
+    '<span class="panel-title">' + t("panelTitle") + "</span>" + chips;
+  discussMessages.appendChild(div);
+  discussScrollDown();
+}
+
 function addDiscussMessage(agent, content, isSummary) {
   if (discussEmpty) discussEmpty.remove();
   const wrap = document.createElement("div");
   wrap.className = "msg ai" + (isSummary ? " summary-msg" : "");
-  const av = AVATAR[agent] || AVATAR.supervisor;
+  const av = avatarFor(agent);
   wrap.innerHTML =
     '<div class="b-avatar avatar ' + av.cls + '">' + av.emoji + '</div>' +
     '<div>' +
-      '<div class="name ' + agent + '">' +
-        (isSummary ? "📋 " : "") + (agent || "assistant") +
+      '<div class="name">' +
+        (isSummary ? "📋 " : "") + (isSummary ? t("coordinator") : labelFor(agent)) +
       '</div>' +
       '<div class="bubble"></div>' +
     '</div>';
@@ -546,6 +608,11 @@ discussStart.addEventListener("click", async () => {
         if (firstTurn && evt.type === "turn") {
           typing.remove();
           firstTurn = false;
+        }
+
+        // Announce the recruited panel as a banner before the turns.
+        if (evt.type === "panel" && evt.roles) {
+          addPanelBanner(evt.roles);
         }
 
         if (evt.type === "turn") {
