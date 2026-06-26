@@ -26,6 +26,7 @@
   --code-text: #d6dbed;
   --inline-code: #e0b3ff;
   --del:       #ff5a5a;
+  --danger:    #ff5a5a;
   --scroll-hover: #3a4055;
 }
 
@@ -52,6 +53,7 @@
   --code-bg:   #f7f8fa;
   --code-text: #2d3142;
   --inline-code: #b035c0;
+  --danger:    #dc2626;
   --del:       #e53e3e;
   --scroll-hover: #c2c7d4;
 }
@@ -423,6 +425,14 @@ code, pre { font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monos
 .btn-primary:hover:not(:disabled) { opacity: .92; }
 .btn-primary:active:not(:disabled) { transform: scale(.97); }
 .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-stop {
+  background: color-mix(in srgb, var(--danger) 16%, var(--panel-2));
+  color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--border));
+  border-radius: 12px; padding: 12px 22px; font-weight: 600; cursor: pointer;
+  font-size: 14px; transition: opacity .2s, transform .1s;
+}
+.btn-stop:hover { background: color-mix(in srgb, var(--danger) 24%, var(--panel-2)); }
+.btn-stop:active { transform: scale(.97); }
 
 /* ---------- Composer hint (Enter to send) ---------- */
 .composer-hint {

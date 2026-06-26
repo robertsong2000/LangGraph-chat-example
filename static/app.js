@@ -494,6 +494,10 @@ const discussStart  = $("#discussStart");
 const discussMessages = $("#discussMessages");
 const discussEmpty  = $("#discussEmpty");
 let discussBusy = false;
+const discussStop   = $("#discussStop");
+// AbortController for the active discussion stream, so the user can
+// terminate a long discussion before all rounds finish.
+let discussController = null;
 
 // ---------- Tab switching ----------
 function switchMode(mode) {
@@ -558,7 +562,11 @@ discussStart.addEventListener("click", async () => {
 
   discussBusy = true;
   discussStart.disabled = true;
+  discussStart.hidden = true;
+  discussStop.hidden = false;
   discussTopic.disabled = true;
+  // Create a fresh controller for this discussion so we can abort it.
+  discussController = new AbortController();
 
   // Clear previous discussion in the view.
   discussMessages.innerHTML = "";
@@ -581,6 +589,7 @@ discussStart.addEventListener("click", async () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topic, rounds }),
+      signal: discussController.signal,
     });
 
     // Read the SSE stream incrementally.
@@ -632,12 +641,25 @@ discussStart.addEventListener("click", async () => {
     if (firstTurn) typing.remove();
   } catch (err) {
     typing.remove();
-    addDiscussMessage("supervisor", "⚠️ " + err.message, false);
+    if (err.name === "AbortError") {
+      // User pressed Stop — show a friendly note instead of an error.
+      addDiscussMessage("supervisor", "⏹ " + t("stopped"), false);
+    } else {
+      addDiscussMessage("supervisor", "⚠️ " + err.message, false);
+    }
   } finally {
     discussBusy = false;
     discussStart.disabled = false;
+    discussStart.hidden = false;
+    discussStop.hidden = true;
     discussTopic.disabled = false;
+    discussController = null;
   }
+});
+
+// Stop button: abort the active discussion stream.
+discussStop.addEventListener("click", () => {
+  if (discussController) discussController.abort();
 });
 
 // Enter key in topic input triggers start.

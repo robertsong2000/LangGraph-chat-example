@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LangGraph Multi-Agent Chat</title>
-<link rel="stylesheet" href="/static/styles.css?v=10">
+<link rel="stylesheet" href="/static/styles.css?v=11">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
@@ -131,6 +131,7 @@
           <input type="number" id="discussRounds" value="10" min="1" max="20">
         </label>
         <button type="button" id="discussStart" class="btn-primary" data-i18n="start">Start</button>
+        <button type="button" id="discussStop" class="btn-stop" data-i18n="stop" hidden>Stop</button>
       </div>
 
       <!-- Discussion timeline -->
@@ -146,7 +147,7 @@
 </div>
 
 <script src="/static/vendor/marked.min.js"></script>
-<script src="/static/i18n.js?v=10"></script>
-<script src="/static/app.js?v=10"></script>
+<script src="/static/i18n.js?v=11"></script>
+<script src="/static/app.js?v=11"></script>
 </body>
 </html>
