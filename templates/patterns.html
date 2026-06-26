@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多智能体编排模式 · LangGraph Supervisor / Hierarchical / Swarm / Network</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Base ===================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0b10;
+  --bg-2: #11131c;
+  --card: #161924;
+  --card-2: #1d2130;
+  --border: #2a2f42;
+  --text: #e8eaf0;
+  --muted: #8b91a8;
+  --dim: #5c6280;
+  --grad-1: #6c8cff;
+  --grad-2: #9b6cff;
+  --grad-3: #ff6cb8;
+  --sup: #f5a623;
+  --code: #4ade80;
+  --res: #38bdf8;
+  --wri: #f472b6;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --danger: #ff5a5a;
+  --maxw: 1140px;
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+code, pre, .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monospace; }
+a { color: var(--grad-1); text-decoration: none; }
+
+/* ===================== Ambient background ===================== */
+.ambient {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 0%, rgba(108,140,255,.14), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 15%, rgba(155,108,255,.12), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 100%, rgba(255,108,184,.08), transparent 60%);
+}
+
+/* ===================== Nav ===================== */
+nav.topbar {
+  position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(14px);
+  background: rgba(10,11,16,.72);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: var(--maxw); margin: 0 auto; padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.brand .logo {
+  width: 32px; height: 32px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--grad-1), var(--grad-2));
+  display: grid; place-items: center; color: #fff; font-size: 18px;
+  box-shadow: 0 4px 16px rgba(108,140,255,.4);
+}
+.brand span { font-size: 15px; }
+.nav-links { display: flex; gap: 6px; }
+.nav-links a {
+  color: var(--muted); font-size: 13.5px; font-weight: 500;
+  padding: 8px 14px; border-radius: 8px; transition: all .2s;
+}
+.nav-links a:hover { color: var(--text); background: var(--card); }
+
+/* ===================== Layout ===================== */
+section { padding: 90px 24px; }
+.container { max-width: var(--maxw); margin: 0 auto; }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--grad-1); margin-bottom: 16px;
+}
+.eyebrow::before {
+  content: ''; width: 24px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--grad-1), var(--grad-2));
+}
+h2.title {
+  font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -.02em;
+  line-height: 1.15; margin-bottom: 16px;
+}
+h2.title .accent {
+  background: linear-gradient(120deg, var(--grad-1), var(--grad-3));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.lead { font-size: 17px; color: var(--muted); max-width: 660px; }
+
+/* ===================== Hero ===================== */
+.hero { padding: 120px 24px 80px; text-align: center; }
+.hero .badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--card); border: 1px solid var(--border);
+  padding: 7px 16px; border-radius: 999px; font-size: 13px; color: var(--muted);
+  margin-bottom: 28px;
+}
+.hero .badge .pulse {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--code);
+  box-shadow: 0 0 0 0 rgba(74,222,128,.6); animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(74,222,128,.5); }
+  70% { box-shadow: 0 0 0 10px rgba(74,222,128,0); }
+  100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+}
+.hero h1 {
+  font-size: clamp(38px, 6vw, 68px); font-weight: 900; letter-spacing: -.03em;
+  line-height: 1.08; margin-bottom: 24px;
+}
+.hero h1 .grad {
+  background: linear-gradient(120deg, var(--grad-1) 0%, var(--grad-2) 50%, var(--grad-3) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero p.sub { font-size: 19px; color: var(--muted); max-width: 640px; margin: 0 auto 36px; }
+.hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 26px; border-radius: 11px; font-weight: 600; font-size: 15px;
+  cursor: pointer; border: none; transition: all .2s; font-family: inherit;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--grad-1), var(--grad-2)); color: #fff;
+  box-shadow: 0 8px 24px rgba(108,140,255,.35);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(108,140,255,.45); }
+.btn-ghost { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--grad-1); background: var(--card-2); }
+
+/* ===================== Pattern cards ===================== */
+.pattern-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-top: 48px;
+}
+.pattern-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+  padding: 32px; position: relative; overflow: hidden; transition: all .3s;
+}
+.pattern-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--pc-grad); opacity: .8;
+}
+.pattern-card:hover { transform: translateY(-4px); border-color: var(--pc-color); box-shadow: 0 16px 48px rgba(0,0,0,.3); }
+.pc-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.pc-icon {
+  width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center;
+  font-size: 26px; background: var(--pc-bg); border: 1px solid var(--pc-color);
+  flex-shrink: 0;
+}
+.pc-title h3 { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+.pc-title .tag {
+  font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--pc-color); margin-top: 2px;
+}
+.pc-desc { font-size: 14.5px; color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
+
+/* ASCII topology diagram */
+.pc-topo {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px; margin-bottom: 20px; overflow-x: auto;
+}
+.pc-topo pre {
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.5;
+  color: var(--text); white-space: pre; margin: 0;
+}
+.pc-topo .label { color: var(--dim); font-size: 11px; margin-bottom: 10px; display: block; }
+
+/* pros / cons lists */
+.pc-list { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pc-list .col h4 {
+  font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.pc-list .pros h4 { color: var(--ok); }
+.pc-list .cons h4 { color: var(--danger); }
+.pc-list ul { list-style: none; }
+.pc-list li {
+  font-size: 13px; color: var(--muted); line-height: 1.6; padding: 3px 0 3px 16px; position: relative;
+}
+.pc-list .pros li::before { content: '✓'; position: absolute; left: 0; color: var(--ok); font-weight: 700; }
+.pc-list .cons li::before { content: '✕'; position: absolute; left: 0; color: var(--danger); font-weight: 700; }
+
+/* per-pattern accent colors */
+.pc-supervisor { --pc-color: #f5a623; --pc-bg: rgba(245,166,35,.12); --pc-grad: linear-gradient(90deg, #f5a623, #fbbf24); }
+.pc-hierarchy { --pc-color: #9b6cff; --pc-bg: rgba(155,108,255,.12); --pc-grad: linear-gradient(90deg, #9b6cff, #6c8cff); }
+.pc-swarm     { --pc-color: #4ade80; --pc-bg: rgba(74,222,128,.12); --pc-grad: linear-gradient(90deg, #4ade80, #38bdf8); }
+.pc-network   { --pc-color: #ff6cb8; --pc-bg: rgba(255,108,184,.12); --pc-grad: linear-gradient(90deg, #ff6cb8, #9b6cff); }
+
+/* ===================== Comparison table ===================== */
+.compare-wrap { margin-top: 48px; overflow-x: auto; border-radius: 16px; border: 1px solid var(--border); }
+.compare {
+  width: 100%; border-collapse: collapse; min-width: 760px; background: var(--card);
+}
+.compare th, .compare td {
+  padding: 16px 18px; text-align: left; border-bottom: 1px solid var(--border);
+  font-size: 14px; vertical-align: top;
+}
+.compare thead th {
+  background: var(--card-2); font-weight: 700; font-size: 13px; letter-spacing: .02em;
+  position: sticky; top: 0;
+}
+.compare tbody tr:hover { background: var(--card-2); }
+.compare .col-dim { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.compare td .yes { color: var(--ok); font-weight: 700; }
+.compare td .no { color: var(--danger); font-weight: 700; }
+.compare td .mid { color: var(--warn); font-weight: 700; }
+
+/* ===================== Decision helper ===================== */
+.decision {
+  background: linear-gradient(135deg, rgba(108,140,255,.08), rgba(155,108,255,.06));
+  border: 1px solid var(--border); border-radius: 20px; padding: 40px;
+}
+.decision h3 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+.decision > p { color: var(--muted); margin-bottom: 28px; font-size: 15px; }
+.decision-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.decision-item {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 20px 22px; transition: all .2s;
+}
+.decision-item:hover { border-color: var(--grad-1); transform: translateY(-2px); }
+.decision-item .di-q { font-size: 14px; color: var(--text); font-weight: 600; margin-bottom: 6px; }
+.decision-item .di-q .qmark { color: var(--grad-1); margin-right: 6px; font-weight: 800; }
+.decision-item .di-a { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+.decision-item .di-a .pill {
+  display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700;
+  margin: 0 2px;
+}
+.pill-sup { background: rgba(245,166,35,.15); color: #f5a623; }
+.pill-hie { background: rgba(155,108,255,.15); color: #9b6cff; }
+.pill-swa { background: rgba(74,222,128,.15); color: #4ade80; }
+.pill-net { background: rgba(255,108,184,.15); color: #ff6cb8; }
+
+/* ===================== Project mapping ===================== */
+.mapping {
+  background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+  padding: 40px; position: relative; overflow: hidden;
+}
+.mapping::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--sup), var(--code));
+}
+.mapping .mm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
+.mm-card {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px;
+}
+.mm-card h4 { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.mm-card .emoji { font-size: 22px; }
+.mm-card p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+.mm-card .verdict {
+  margin-top: 14px; padding: 10px 14px; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+}
+.verdict-chat { background: rgba(245,166,35,.1); color: var(--sup); border: 1px solid rgba(245,166,35,.3); }
+.verdict-disc { background: rgba(74,222,128,.1); color: var(--code); border: 1px solid rgba(74,222,128,.3); }
+
+/* ===================== Footer ===================== */
+footer {
+  border-top: 1px solid var(--border); padding: 48px 24px; text-align: center; color: var(--muted);
+}
+footer .links { display: flex; gap: 18px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+footer .links a { font-size: 13.5px; }
+footer p { font-size: 13.5px; }
+
+/* ===================== Reveal animation ===================== */
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s, transform .7s; }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ===================== Responsive ===================== */
+@media (max-width: 860px) {
+  .pattern-grid { grid-template-columns: 1fr; }
+  .decision-grid { grid-template-columns: 1fr; }
+  .mapping .mm-grid { grid-template-columns: 1fr; }
+  section { padding: 64px 20px; }
+}
+@media (max-width: 560px) {
+  .pc-list { grid-template-columns: 1fr; }
+  .hero { padding: 80px 20px 50px; }
+}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<!-- ============ NAV ============ -->
+<nav class="topbar">
+  <div class="nav-inner">
+    <a href="/" class="brand">
+      <div class="logo">🔗</div>
+      <span>LangGraph 多智能体</span>
+    </a>
+    <div class="nav-links">
+      <a href="/">体验 Demo</a>
+      <a href="/architecture">架构解析</a>
+      <a href="#supervisor">Supervisor</a>
+      <a href="#compare">对比</a>
+      <a href="#decision">选型</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="badge"><span class="pulse"></span> LangGraph Multi-Agent Orchestration</div>
+  <h1>四种多智能体<span class="grad">编排模式</span>全解析</h1>
+  <p class="sub">Supervisor · Hierarchical · Swarm · Network —— 同样是 StateGraph，调度拓扑不同，行为与适用场景天差地别。一张图讲清每种模式的核心机制、优劣与取舍。</p>
+  <div class="hero-cta">
+    <a href="#supervisor" class="btn btn-primary">逐个拆解 →</a>
+    <a href="#compare" class="btn btn-ghost">查看对比表</a>
+  </div>
+</header>
+
+<!-- ============ PATTERNS ============ -->
+<section id="supervisor">
+  <div class="container">
+    <div class="reveal">
+      <div class="eyebrow">Pattern · 01</div>
+      <h2 class="title">监督者模式 <span class="accent">Supervisor</span></h2>
+      <p class="lead">一个中心化的大模型"调度员"掌控全局：它读取全部上下文，决定每一步派哪个专家出场，并判断何时收工。这是 LangGraph 最经典、也是本项目<strong>聊天模式</strong>采用的模式。</p>
+    </div>
+
+    <div class="pattern-grid">
+      <!-- Supervisor -->
+      <div class="pattern-card pc-supervisor reveal">
+        <div class="pc-header">
+          <div class="pc-icon">🧭</div>
+          <div class="pc-title">
+            <h3>Supervisor 监督者</h3>
+            <div class="tag">中心化 · LLM 路由</div>
+          </div>
+        </div>
+        <p class="pc-desc">中央监督者是一个 LLM 节点，每轮读取全部历史，用提示词自行判断"该派谁、是否 FINISH"。专家是被调度的叶子节点，完成后回到监督者形成循环。</p>
+        <div class="pc-topo">
+          <span class="label">拓扑</span>
+<pre>        ┌─────────────┐
+用户 ──▶│  Supervisor │◀──────────┐
+        │   (LLM)     │           │
+        └──────┬──────┘           │
+      派发任务 │                  │ 回到监督者
+   ┌──────────┼──────────┐       │ 判断 FINISH
+   ▼          ▼          ▼       │
+┌──────┐  ┌──────┐  ┌──────┐    │
+│Coder │  │ Res. │  │Writer│────┘
+└──────┘  └──────┘  └──────┘
+   条件边: supervisor → {coder|researcher|writer|FINISH}</pre>
+        </div>
+        <div class="pc-list">
+          <div class="col pros">
+            <h4>● 优势</h4>
+            <ul>
+              <li>控制力强，全局可见</li>
+              <li>易于调试与追踪路由</li>
+              <li>终止逻辑集中可控</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>● 劣势</h4>
+            <ul>
+              <li>每轮多一次 LLM 调用</li>
+              <li>监督者是性能瓶颈</li>
+              <li>专家过多时路由失准</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hierarchical -->
+      <div class="pattern-card pc-hierarchy reveal" id="hierarchical">
+        <div class="pc-header">
+          <div class="pc-icon">🏢</div>
+          <div class="pc-title">
+            <h3>Hierarchical 层级</h3>
+            <div class="tag">嵌套监督者</div>
+          </div>
+        </div>
+        <p class="pc-desc">监督者的监督者。顶层监督者把大任务拆给"团队监督者"，每个团队监督者再调度自己的专家子图。本质是 Supervisor 的递归组合，适合规模庞大的组织化分工。</p>
+        <div class="pc-topo">
+          <span class="label">拓扑</span>
+<pre>          ┌──────────────┐
+   用户 ──▶│  Top Sup.    │  拆解大任务
+          └──┬────────┬──┘
+        ┌────┘        └────┐
+        ▼                  ▼
+  ┌──────────┐       ┌──────────┐
+  │研发团队   │       │内容团队   │
+  │Supervisor│       │Supervisor│
+  └─┬───┬─┬──┘       └──┬───┬───┘
+    ▼   ▼ ▼              ▼   ▼
+  Coder QA ...       Writer Editor
+   "监督者的监督者" = 多层 StateGraph 嵌套</pre>
+        </div>
+        <div class="pc-list">
+          <div class="col pros">
+            <h4>● 优势</h4>
+            <ul>
+              <li>可无限扩展规模</li>
+              <li>职责边界清晰分层</li>
+              <li>子图可独立复用</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>● 劣势</h4>
+            <ul>
+              <li>调用链长、延迟叠加</li>
+              <li>上下文跨层传递复杂</li>
+              <li>过度设计风险高</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Swarm -->
+      <div class="pattern-card pc-swarm reveal" id="swarm">
+        <div class="pc-header">
+          <div class="pc-icon">🐝</div>
+          <div class="pc-title">
+            <h3>Swarm 群体</h3>
+            <div class="tag">去中心化 · Handoff</div>
+          </div>
+        </div>
+        <p class="pc-desc">没有中央调度员。每个专家自主判断"这事我搞不定，交给 X"，通过 <code>handoff</code> 把控制权直接移交给最合适的同行。路由发生在工具调用层，而非额外的 LLM 节点。</p>
+        <div class="pc-topo">
+          <span class="label">拓扑</span>
+<pre>  无中心节点，专家间直接 handoff：
+
+   ┌────────┐  handoff   ┌─────────┐
+   │ Coder  │───────────▶│Researcher│
+   └────┬───┘            └────┬─────┘
+        │     handoff         │
+        ▼                     ▼
+   ┌────────┐  handoff   ┌─────────┐
+   │ Writer │◀───────────│  ...    │
+   └────────┘            └─────────┘
+   每个 agent 调用 transfer_to_X() 工具移交控制</pre>
+        </div>
+        <div class="pc-list">
+          <div class="col pros">
+            <h4>● 优势</h4>
+            <ul>
+              <li>无中心瓶颈</li>
+              <li>专家多时开销更低</li>
+              <li>对等协作更自然</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>● 劣势</h4>
+            <ul>
+              <li>路由不直观、难调试</li>
+              <li>可能死循环移交</li>
+              <li>缺乏全局视角</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network -->
+      <div class="pattern-card pc-network reveal" id="network">
+        <div class="pc-header">
+          <div class="pc-icon">🕸️</div>
+          <div class="pc-title">
+            <h3>Network 网状</h3>
+            <div class="tag">全互联 · 自组织</div>
+          </div>
+        </div>
+        <p class="pc-desc">最自由的拓扑：任意 agent 都可与其他任意 agent 直接通信，没有固定调度顺序。靠共享状态和动态条件边自组织，常用于复杂的协作型工作流和模拟社会。</p>
+        <div class="pc-topo">
+          <span class="label">拓扑</span>
+<pre>  全互联，任意点对任意点：
+
+      ┌────────┐
+   ┌─▶│ Agent A│◀┐
+   │  └───┬────┘ │
+   │      │      │
+   │  ┌───▼────┐ │
+   └──│ Agent B│─┘
+      └───┬────┘
+          │
+   ┌──────▼───┐
+   │ Agent C  │──(可连回 A/B)
+   └──────────┘
+   动态条件边，由状态/LLM 决定下一步走向</pre>
+        </div>
+        <div class="pc-list">
+          <div class="col pros">
+            <h4>● 优势</h4>
+            <ul>
+              <li>表达力最强</li>
+              <li>贴近真实协作</li>
+              <li>支持并行涌现</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>● 劣势</h4>
+            <ul>
+              <li>极易失控/死循环</li>
+              <li>行为难预测难复现</li>
+              <li>调试与成本最高</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMPARE TABLE ============ -->
+<section id="compare" style="background:var(--bg-2);">
+  <div class="container">
+    <div class="reveal">
+      <div class="eyebrow">Pattern · 02</div>
+      <h2 class="title">四模式<span class="accent">一表对比</span></h2>
+      <p class="lead">沿五个关键维度横向比较，帮你快速定位哪种拓扑适合自己的场景。</p>
+    </div>
+
+    <div class="compare-wrap reveal">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th>维度</th>
+            <th>🧭 Supervisor</th>
+            <th>🏢 Hierarchical</th>
+            <th>🐝 Swarm</th>
+            <th>🕸️ Network</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-dim">控制方式</td>
+            <td>中心化 LLM 路由</td>
+            <td>多层中心化</td>
+            <td>去中心化 handoff</td>
+            <td>全互联自组织</td>
+          </tr>
+          <tr>
+            <td class="col-dim">路由决策者</td>
+            <td>监督者 LLM</td>
+            <td>各级监督者</td>
+            <td>专家自身（工具调用）</td>
+            <td>状态 / 任意 agent</td>
+          </tr>
+          <tr>
+            <td class="col-dim">额外 LLM 开销</td>
+            <td><span class="mid">每轮 +1 次</span></td>
+            <td><span class="no">多次（每层）</span></td>
+            <td><span class="yes">几乎无</span></td>
+            <td><span class="mid">取决于边数</span></td>
+          </tr>
+          <tr>
+            <td class="col-dim">可调试性</td>
+            <td><span class="yes">高</span></td>
+            <td><span class="mid">中（分层）</span></td>
+            <td><span class="no">低</span></td>
+            <td><span class="no">很低</span></td>
+          </tr>
+          <tr>
+            <td class="col-dim">死循环风险</td>
+            <td><span class="yes">可控</span></td>
+            <td><span class="mid">中</span></td>
+            <td><span class="no">较高</span></td>
+            <td><span class="no">高</span></td>
+          </tr>
+          <tr>
+            <td class="col-dim">最佳规模</td>
+            <td>2–6 个专家</td>
+            <td>10+，需分组</td>
+            <td>多个对等专家</td>
+            <td>复杂协作 / 模拟</td>
+          </tr>
+          <tr>
+            <td class="col-dim">官方库</td>
+            <td><code>langgraph-supervisor</code></td>
+            <td>supervisor 嵌套</td>
+            <td><code>langgraph-swarm</code></td>
+            <td>自定义图</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DECISION ============ -->
+<section id="decision">
+  <div class="container">
+    <div class="reveal">
+      <div class="eyebrow">Pattern · 03</div>
+      <h2 class="title">该选<span class="accent">哪一种</span>？</h2>
+      <p class="lead">没有银弹。根据你的核心诉求，从下面几个判断题出发快速锁定。</p>
+    </div>
+
+    <div class="decision reveal">
+      <h3>选型决策树</h3>
+      <p>回答这些问题，匹配度最高的模式就是你的起点。</p>
+      <div class="decision-grid">
+        <div class="decision-item">
+          <div class="di-q"><span class="qmark">Q1.</span>需要全局可见、可控可调试的路由？</div>
+          <div class="di-a">是 → <span class="pill pill-sup">Supervisor</span>。单点调度，每一步都可追踪，最适合需要确定性流程的工作流。</div>
+        </div>
+        <div class="decision-item">
+          <div class="di-q"><span class="qmark">Q2.</span>专家数量多到需要分组管理？</div>
+          <div class="di-a">是 → <span class="pill pill-hie">Hierarchical</span>。把专家按职能聚成子团队，每个团队一个监督者，顶层再统筹。</div>
+        </div>
+        <div class="decision-item">
+          <div class="di-q"><span class="qmark">Q3.</span>专家是对等的、想让它们自己互相移交？</div>
+          <div class="di-a">是 → <span class="pill pill-swa">Swarm</span>。省掉中心节点，专家通过 handoff 工具直接转交，省时省 token。</div>
+        </div>
+        <div class="decision-item">
+          <div class="di-q"><span class="qmark">Q4.</span>需要任意角色之间都能自由协作（如模拟辩论/社会）？</div>
+          <div class="di-a">是 → <span class="pill pill-net">Network</span>。表达力最强，但要自己兜底死循环和成本。</div>
+        </div>
+        <div class="decision-item">
+          <div class="di-q"><span class="qmark">Q5.</span>对延迟和 token 成本敏感？</div>
+          <div class="di-a">优先 <span class="pill pill-swa">Swarm</span> &gt; <span class="pill pill-sup">Supervisor</span>，避免 Hierarchical 的多层调用叠加。</div>
+        </div>
+        <div class="decision-item">
+          <div class="di-q"><span class="qmark">Q6.</span>不确定 / 想先跑通？</div>
+          <div class="di-a">从 <span class="pill pill-sup">Supervisor</span> 起步——它最直观、最可控，后续随时可演化为其他模式。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROJECT MAPPING ============ -->
+<section style="background:var(--bg-2);">
+  <div class="container">
+    <div class="reveal">
+      <div class="eyebrow">Pattern · 04</div>
+      <h2 class="title">本项目<span class="accent">用了哪种</span>？</h2>
+      <p class="lead">这个 LangGraph Demo 同时实现了两个图，它们分别对应不同模式的"变体"。</p>
+    </div>
+
+    <div class="mapping reveal">
+      <div class="mm-grid">
+        <div class="mm-card">
+          <h4><span class="emoji">💬</span> 聊天模式（graph.py）</h4>
+          <p>监督者每轮读全部历史，用确定性代码判定 FINISH（防止推理模型乱结束），派发给 coder / researcher / writer 三专家之一，回答后回到监督者。</p>
+          <div class="verdict verdict-chat">✓ 标准 Supervisor 模式（带确定性兜底）</div>
+        </div>
+        <div class="mm-card">
+          <h4><span class="emoji">🎯</span> 圆桌讨论（discussion.py）</h4>
+          <p>协调者每轮挑一个按主题动态招募的专家发言，固定 N 轮后进入总结者。形态像 Supervisor，但终止靠轮次计数器，不靠 LLM 自主判断。</p>
+          <div class="verdict verdict-disc">✓ Supervisor 形态 + 固定循环 + 独立总结节点</div>
+        </div>
+      </div>
+      <p style="margin-top:24px; font-size:14px; color:var(--muted); line-height:1.7;">
+        💡 <strong>关键洞察：</strong>同一个项目里，"谁决定何时结束"是区分模式可靠性的核心。聊天模式把 FINISH 交给代码兜底；讨论模式干脆把结束权完全交给轮次计数器——把不可靠的 LLM 自主判断从控制流里拿走，是工程上保证多智能体系统不"跑飞"的常用手段。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="links">
+    <a href="/">体验 Demo</a>
+    <a href="/architecture">架构解析</a>
+    <a href="#supervisor">模式拆解</a>
+    <a href="#compare">对比表</a>
+  </div>
+  <p>LangGraph 多智能体编排模式 · 基于 StateGraph 的四种经典拓扑</p>
+  <p style="margin-top:6px; font-size:12px;">Supervisor · Hierarchical · Swarm · Network</p>
+</footer>
+
+<script>
+// Scroll reveal
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+</body>
+</html>

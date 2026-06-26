@@ -87,6 +87,13 @@ async def architecture():
         return HTMLResponse(fh.read())
 
 
+@app.get("/patterns", response_class=HTMLResponse)
+async def patterns():
+    """Multi-agent orchestration patterns comparison page."""
+    with open("templates/patterns.html", encoding="utf-8") as fh:
+        return HTMLResponse(fh.read())
+
+
 # --------------------------------------------------------------------------- #
 # Routes — API
 # --------------------------------------------------------------------------- #
